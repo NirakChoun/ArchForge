@@ -46,6 +46,8 @@ Fixed parameters (not options), from the gem5 v25.1 standard library cache class
 
 O3 core parameters not listed are gem5 defaults and appear in every run's `config.ini`: fetch, decode, rename, issue, and commit width 8; 256 integer and 256 floating-point physical registers; `TournamentBP` conditional predictor. MinorCPU and TimingSimpleCPU use their gem5 defaults.
 
+With `--line-size` below 64, the O3 core's `fetchBufferSize` (gem5 default 64 B) is set to the line size, because gem5 requires the fetch buffer to fit in one line. Studies that vary line size therefore also change the fetch buffer at 32 B.
+
 `SingleChannelSimpleMemory` bandwidth is set to 19.2e9 B/s (one DDR4-2400 x64 channel; gem5 stores it as 52 ps per byte), so a latency sweep changes latency only.
 
 Cache latencies are fixed in cycles and do not grow with capacity. A larger real cache is slower; this model does not charge for it (see Limitations in `docs/report.md`).

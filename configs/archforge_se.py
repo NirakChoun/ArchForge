@@ -184,6 +184,10 @@ def main():
                 obj.LQEntries = a.lq
             if a.sq:
                 obj.SQEntries = a.sq
+            # O3 requires fetchBufferSize (default 64 B) <= the line size;
+            # with 32-byte lines the fetch buffer shrinks to one line.
+            if a.line_size < 64:
+                obj.fetchBufferSize = a.line_size
     board = SimpleBoard(
         clk_freq=a.clock,
         processor=processor,

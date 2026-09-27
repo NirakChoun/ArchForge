@@ -28,6 +28,7 @@ CASES=(
   "l2-size|--l2-size 512KiB"
   "l2-assoc|--l2-assoc 8"
   "line-size|--line-size 128"
+  "line-size-32|--line-size 32"
   "pf-l1d|--prefetcher stride"
   "pf-l2|--prefetcher stride --prefetch-level l2"
   "mem-simple|--mem-type SimpleMemory --mem-latency 80ns"
