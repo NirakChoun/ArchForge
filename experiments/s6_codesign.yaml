@@ -13,7 +13,7 @@ id: s6-codesign
 study: stage6_codesign
 description: matmul tile size x L1D size x L2 size at two matrix sizes
 config: configs/archforge_se.py
-time: "00:45:00"   # set from the pilot; see docs/stage6.md
+time: "01:00:00"   # pilot max 24 min 15 s (untiled N448, 16 KiB L1D, 256 KiB L2), x2, rounded up
 mem: 2G
 base: {}
 hardware:
