@@ -3,7 +3,7 @@ id: s4-prefetch
 study: stage4_prefetch
 description: stride prefetcher on sequential, strided, and pointer-chase access
 config: configs/archforge_se.py
-time: "00:15:00"   # same inputs as Stage 2; confirmed by pilot
+time: "00:15:00"   # pilot max 5 min 31 s (chase, stride at L2), x2, rounded up
 mem: 2G
 base: {}
 hardware:
