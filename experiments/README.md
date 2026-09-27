@@ -12,6 +12,7 @@ One YAML file per sweep. `scripts/run_sweep.py` expands it into runs (every work
 | `base` | Config options applied to every run (option names without `--`) |
 | `hardware.list` | Explicit list of option dicts, one configuration each |
 | `hardware.grid` | `{option: [values]}`; the cross product is appended to the list |
+| `blocks` | Optional list of `{workloads, hardware}` sets, each expanded as above and concatenated (one experiment, several one-variable sweeps) |
 | `workloads` | List of `{name, binary, variant, input, args, cflags, compiler, options}`; `binary` is a file in `workloads/bin/`, `options` are per-workload config options |
 
 Commands:

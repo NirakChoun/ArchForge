@@ -1,0 +1,40 @@
+# Stage 4c: cache capacity, associativity, and line size, each swept alone
+# around the baseline with workloads chosen to expose that one effect.
+id: s4-cache
+study: stage4_cache
+description: L1D/L2 capacity, L1D/L2 associativity, and line size, one at a time
+config: configs/archforge_se.py
+time: "00:15:00"   # same workloads and sizes as Stage 2 (max 5.5 min); confirmed by pilot
+mem: 2G
+base: {}
+blocks:
+  # Capacity: footprints between the swept sizes.
+  - hardware: {grid: {l1d-size: [16KiB, 32KiB, 64KiB]}}
+    workloads:
+      - {name: seqsum, binary: seqsum, input: 24KiB, args: "24576 2097152"}
+      - {name: seqsum, binary: seqsum, input: 48KiB, args: "49152 2097152"}
+      - {name: chase, binary: chase, variant: c1, input: 24KiB, args: "24576 1 1048576"}
+      - {name: chase, binary: chase, variant: c1, input: 48KiB, args: "49152 1 1048576"}
+  - hardware: {grid: {l2-size: [256KiB, 512KiB, 1MiB, 2MiB]}}
+    workloads:
+      - {name: seqsum, binary: seqsum, input: 768KiB, args: "786432 2097152"}
+      - {name: seqsum, binary: seqsum, input: 1536KiB, args: "1572864 2097152"}
+      - {name: chase, binary: chase, variant: c1, input: 768KiB, args: "786432 1 1048576"}
+      - {name: chase, binary: chase, variant: c1, input: 1536KiB, args: "1572864 1 1048576"}
+  # Associativity at fixed capacity: spacing is a multiple of every set
+  # period swept, so all lines share one set in every configuration.
+  - hardware: {grid: {l1d-assoc: [2, 4, 8, 16]}}
+    workloads:
+      - {name: conflict, binary: conflict, variant: sp16k, input: 6-lines, args: "6 16384 174762"}
+      - {name: conflict, binary: conflict, variant: sp16k, input: 12-lines, args: "12 16384 87381"}
+  - hardware: {grid: {l2-assoc: [4, 8, 16, 32]}}
+    workloads:
+      - {name: conflict, binary: conflict, variant: sp256k, input: 12-lines, args: "12 262144 87381"}
+      - {name: conflict, binary: conflict, variant: sp256k, input: 24-lines, args: "24 262144 43690"}
+  # Line size: spatial locality (seqsum, small strides) vs none (chase).
+  - hardware: {grid: {line-size: [32, 64, 128]}}
+    workloads:
+      - {name: seqsum, binary: seqsum, input: 16MiB, args: "16777216 2097152"}
+      - {name: stride, binary: stride, variant: s2, input: 8MiB, args: "8388608 2 1048576"}
+      - {name: stride, binary: stride, variant: s16, input: 8MiB, args: "8388608 16 1048576"}
+      - {name: chase, binary: chase, variant: c1, input: 16MiB, args: "16777216 1 524288"}

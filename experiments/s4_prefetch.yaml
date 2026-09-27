@@ -1,0 +1,19 @@
+# Stage 4d: no prefetcher vs gem5's StridePrefetcher at L1D or at L2.
+id: s4-prefetch
+study: stage4_prefetch
+description: stride prefetcher on sequential, strided, and pointer-chase access
+config: configs/archforge_se.py
+time: "00:15:00"   # same inputs as Stage 2; confirmed by pilot
+mem: 2G
+base: {}
+hardware:
+  list:
+    - {prefetcher: none}
+    - {prefetcher: stride, prefetch-level: l1d}
+    - {prefetcher: stride, prefetch-level: l2}
+workloads:
+  - {name: seqsum, binary: seqsum, input: 16MiB, args: "16777216 2097152"}
+  - {name: stride, binary: stride, variant: s4, input: 8MiB, args: "8388608 4 1048576"}
+  - {name: stride, binary: stride, variant: s8, input: 8MiB, args: "8388608 8 1048576"}
+  - {name: stride, binary: stride, variant: s16, input: 8MiB, args: "8388608 16 1048576"}
+  - {name: chase, binary: chase, variant: c1, input: 16MiB, args: "16777216 1 524288"}

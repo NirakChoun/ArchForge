@@ -5,7 +5,8 @@
 
 Experiment file (see experiments/README.md for the full schema):
   id, study, description, config, time, mem, base (options for every run),
-  workloads (list), hardware ({list: [...]} and/or {grid: {opt: [values]}}).
+  workloads (list), hardware ({list: [...]} and/or {grid: {opt: [values]}}),
+  or blocks: a list of {workloads, hardware} sets expanded one after another.
 Runs are the cross product workloads x hardware. Every run gets its own
 output directory under $AF_SCRATCH/runs/<id>/. Workload binaries are copied
 into the sweep directory first, so a later rebuild cannot change a sweep
@@ -31,6 +32,15 @@ DEFAULT_CFLAGS = "-O2 -march=x86-64 -static"
 
 
 def expand(exp):
+    # `blocks` lets one experiment hold several (workloads x hardware) sets,
+    # e.g. one per cache parameter, each a one-variable sweep of its own.
+    if exp.get("blocks"):
+        runs = []
+        for b in exp["blocks"]:
+            sub = {k: v for k, v in exp.items() if k != "blocks"}
+            sub.update(b)
+            runs += expand(sub)
+        return runs
     hw = exp.get("hardware", {}) or {}
     configs = [dict(c) for c in hw.get("list", [])]
     grid = hw.get("grid")

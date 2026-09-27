@@ -1,0 +1,24 @@
+# Stage 4b: memory-level parallelism. Designed factorial over ROB size,
+# independent chains, and a fixed main-memory latency (SimpleMemory, so the
+# latency is exactly the value set and bandwidth is fixed at 19.2e9 B/s),
+# plus a load-queue sweep at the default ROB. 512K total steps over 16 MiB.
+id: s4-mlp
+study: stage4_mlp
+description: ROB x chains x memory latency, and LQ x chains
+config: configs/archforge_se.py
+time: "00:30:00"   # set from the pilot (ROB 32, 1 chain, 200 ns is the slowest case)
+mem: 2G
+base: {mem-type: SimpleMemory}
+hardware:
+  grid:
+    rob: [32, 64, 128, 192, 256]
+    mem-latency: [50ns, 100ns, 200ns]
+  list:
+    - {rob: 192, lq: 8, mem-latency: 100ns}
+    - {rob: 192, lq: 16, mem-latency: 100ns}
+    - {rob: 192, lq: 64, mem-latency: 100ns}
+workloads:
+  - {name: chase, binary: chase, variant: c1, input: 16MiB, args: "16777216 1 524288"}
+  - {name: chase, binary: chase, variant: c2, input: 16MiB, args: "16777216 2 524288"}
+  - {name: chase, binary: chase, variant: c4, input: 16MiB, args: "16777216 4 524288"}
+  - {name: chase, binary: chase, variant: c8, input: 16MiB, args: "16777216 8 524288"}
