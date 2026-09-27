@@ -45,10 +45,12 @@ STATS = {
     "l1d_demand_misses": (f"{L1D}.demandMisses::total", L1D, None),
     "l1d_demand_mshr_misses": (f"{L1D}.demandMshrMisses::total", L1D, None),
     "l1d_writebacks": (f"{L1D}.writebacks::total", L1D, None),
+    "l1d_demand_miss_latency": (f"{L1D}.demandMissLatency::total", L1D, None),
     "l2_demand_accesses": (f"{L2}.demandAccesses::total", L2, None),
     "l2_demand_misses": (f"{L2}.demandMisses::total", L2, None),
     "l2_overall_misses": (f"{L2}.overallMisses::total", L2, None),
     "l2_writebacks": (f"{L2}.writebacks::total", L2, None),
+    "l2_demand_miss_latency": (f"{L2}.demandMissLatency::total", L2, None),
     "dram_read_reqs": (f"{MEM}.readReqs", MEM, None),
     "dram_write_reqs": (f"{MEM}.writeReqs", MEM, None),
     "dram_bytes_read": (f"{MEM}.dram.bytesRead::total", f"{MEM}.dram", None),
@@ -79,7 +81,7 @@ STATS = {
     "pf_l2_coverage": (f"{L2}.prefetcher.coverage", f"{L2}.prefetcher", None),
 }
 DERIVED = ["cpi", "l1d_miss_rate", "l2_miss_rate", "l1d_mpki", "l2_mpki",
-           "br_mispredict_rate", "br_mpki", "mem_read_bytes"]
+           "br_mispredict_rate", "br_mpki", "mem_read_bytes", "l1d_mlp", "l2_mlp"]
 
 # config.ini records the C++ base class as `type`; the ISA is checked
 # separately through the core's `isa` child (X86ISA).
@@ -143,6 +145,10 @@ def extract(dump, cp, cpu):
     row["l2_mpki"] = ratio("l2_demand_misses", "sim_insts", 1000.0)
     row["br_mispredict_rate"] = ratio("br_cond_incorrect", "br_cond_predicted")
     row["br_mpki"] = ratio("br_cond_incorrect", "sim_insts", 1000.0)
+    # Average number of demand misses outstanding: total miss latency (ticks,
+    # summed over misses) divided by elapsed ticks (Little's law).
+    row["l1d_mlp"] = ratio("l1d_demand_miss_latency", "sim_ticks")
+    row["l2_mlp"] = ratio("l2_demand_miss_latency", "sim_ticks")
     # Bytes read from main memory, whichever memory model was used.
     row["mem_read_bytes"] = (row["dram_bytes_read"] if row["dram_bytes_read"] is not None
                              else row["smem_bytes_read"])
