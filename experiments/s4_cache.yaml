@@ -4,7 +4,7 @@ id: s4-cache
 study: stage4_cache
 description: L1D/L2 capacity, L1D/L2 associativity, and line size, one at a time
 config: configs/archforge_se.py
-time: "00:15:00"   # same workloads and sizes as Stage 2 (max 5.5 min); confirmed by pilot
+time: "00:15:00"   # pilot max 5 min 50 s (chase 16 MiB, 128 B lines), x2, rounded up
 mem: 2G
 base: {}
 blocks:
