@@ -1,0 +1,22 @@
+# Stage 5: characterize the application workloads and their software
+# variants on the baseline O3 system.
+id: s5-workloads
+study: stage5_workloads
+description: matmul variants, AoS vs SoA, reduction, sort on the baseline
+config: configs/archforge_se.py
+time: "00:30:00"   # set from the pilot (matmul ijk N=320 expected slowest)
+mem: 2G
+base: {}
+hardware:
+  list:
+    - {}
+workloads:
+  - {name: matmul, binary: matmul, variant: ijk, input: N320, args: "0 320"}
+  - {name: matmul, binary: matmul, variant: ikj, input: N320, args: "1 320"}
+  - {name: matmul, binary: matmul, variant: tiled32, input: N320, args: "2 320 32"}
+  - {name: aos_soa, binary: aos_soa, variant: aos-f1, input: 128K-rec, args: "0 131072 1 4"}
+  - {name: aos_soa, binary: aos_soa, variant: soa-f1, input: 128K-rec, args: "1 131072 1 4"}
+  - {name: aos_soa, binary: aos_soa, variant: aos-f8, input: 128K-rec, args: "0 131072 8 1"}
+  - {name: aos_soa, binary: aos_soa, variant: soa-f8, input: 128K-rec, args: "1 131072 8 1"}
+  - {name: reduce, binary: reduce, input: 1M-elem, args: "1048576 2"}
+  - {name: sort, binary: sort, input: 256K-elem, args: "262144"}
