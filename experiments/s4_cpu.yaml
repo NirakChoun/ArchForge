@@ -15,3 +15,6 @@ workloads:
   - {name: seqsum, binary: seqsum, input: 16MiB, args: "16777216 2097152"}
   - {name: chase, binary: chase, variant: c1, input: 16MiB, args: "16777216 1 1048576"}
   - {name: branch, binary: branch, variant: random, input: 1M, args: "2 1048576"}
+  # Follow-up to Stage 2: conflict sets on in-order cores.
+  - {name: conflict, binary: conflict, variant: sp4k, input: 9-lines, args: "9 4096 116508"}
+  - {name: conflict, binary: conflict, variant: sp4k, input: 16-lines, args: "16 4096 65536"}
