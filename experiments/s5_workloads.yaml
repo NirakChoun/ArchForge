@@ -4,7 +4,7 @@ id: s5-workloads
 study: stage5_workloads
 description: matmul variants, AoS vs SoA, reduction, sort on the baseline
 config: configs/archforge_se.py
-time: "00:30:00"   # set from the pilot (matmul ijk N=320 expected slowest)
+time: "01:00:00"   # pilot max 24 min 17 s (matmul ijk N=320), x2, rounded up
 mem: 2G
 base: {}
 hardware:
