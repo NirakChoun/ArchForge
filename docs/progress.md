@@ -4,8 +4,8 @@ Running log for resuming work: stage reports, commits, core-hours, disk, failure
 
 ## Current state
 
-- Stages 0 to 3 complete. Next: Stage 4 (pilot, then the four studies in `experiments/s4_*.yaml`).
-- Cumulative core-hours: 4.85 of 600.
+- Stages 0 to 4 complete. Next: Stage 5 (`experiments/s5_workloads.yaml`), then the Stage 6 pilot.
+- Cumulative core-hours: 14.90 of 600.
 - Home usage: 7.3 GB of 20 GB (stop threshold 16 GB).
 - No ArchForge jobs running or pending.
 
@@ -27,6 +27,7 @@ Running log for resuming work: stage reports, commits, core-hours, disk, failure
 | 0 | 24154193 (env), 24154194 (failed build), 24154203 (build), 24154327, 24154329 (determinism) | 3.67 | 3.67 |
 | 1 | 24154343, 24154348, 24154351 (option checks, about 45 s each) | 0.02 | 3.69 |
 | 2-3 | 24154357 (pilot), 24154374 (sweep), 24154474 (reruns) | 1.16 | 4.85 |
+| 4 | s4-cpu 24154521, 24154547; s4-mlp 24154580, 24154606; s4-cache 24154820, 24154840, 24155086; option check 24155085; s4-prefetch 24155102, 24155119 | 10.05 | 14.90 |
 
 ## Decisions
 
@@ -67,8 +68,21 @@ Runner, collector, and parser in place and exercised by Stage 2; details in `doc
 - 13 parser unit tests pass against a saved run.
 - Validation catches wrong configuration, missing PASS, wrong dump count, dirty tree, and cross-configuration instruction mismatch.
 
+## Stage 4 report
+
+Four mechanism studies, 164 runs, all valid; details in `docs/stage4.md`.
+
+- CPU model: O3 3.6x to 5x TimingSimple on streaming, equal on the pointer chase and on the serialized-multiply compute loop. On in-order models the conflict sets miss on every access, so the Stage 2 conflict deviation is an out-of-order effect.
+- MLP: cycles per step divide exactly by the number of independent chains; the ROB matters only at 8 chains and only from 32 to 64 entries; LQ 8 costs 2 percent at 8 chains.
+- Caches: capacity and associativity boundaries exactly where predicted; 128-byte lines help sequential access (6.74 to 6.09 cycles per load) and double the cost of 128-byte strides.
+- Prefetching: stride prefetcher doubles sequential-sum speed with no extra DRAM traffic; useless on 64- and 128-byte strides because O3 demand misses already lead it; gem5's accuracy/coverage statistics understate late-but-helpful prefetches.
+- Failure: 32-byte lines failed on O3 (`fetch buffer size (64 bytes) is greater than the cache block size`). Fixed in the config (fetch buffer follows the line size below 64 B, documented in `docs/architecture.md`), option check extended, four runs rerun.
+- Contradicted expectations: MinorCPU slower than TimingSimpleCPU on nearly everything; stride 2 slower with 128-byte lines than with 64-byte lines.
+
 ## Open questions
 
-- Conflict sets on O3 miss far less often than cyclic LRU predicts (Stage 2). Follow-up in Stage 4 CPU-model study.
+- Conflict sets on O3 miss far less often than cyclic LRU predicts (Stage 2). Resolved in part by Stage 4: in-order models miss on every access, so out-of-order issue is the cause; the exact reordering was not traced.
 - Strided DRAM access gets faster from stride 8 to stride 64 as DRAM mean access latency falls (Stage 2).
+- MinorCPU in gem5 v25.1 is slower than TimingSimpleCPU on these x86 workloads; its branch predictor records zero lookups (Stage 4).
+- Stride-2 loads run slower with 128-byte than with 64-byte lines (Stage 4).
 - The compute loop is serialized, 3 cycles per 64-bit multiply, with no functional-unit contention (Stage 2); attributed to gem5's x86 IMUL micro-ops, not investigated further.
