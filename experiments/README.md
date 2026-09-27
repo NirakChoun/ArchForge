@@ -20,7 +20,8 @@ Commands:
 ```
 source scripts/env.sh
 python scripts/run_sweep.py experiments/<file>.yaml --dry-run      # list runs with indices
-python scripts/run_sweep.py experiments/<file>.yaml --pilot 3,9    # pilot runs
+python scripts/run_sweep.py experiments/<file>.yaml --pilot 3,9    # pilot runs (any index list;
+                                                                   # also used to submit the rest)
 python scripts/run_sweep.py experiments/<file>.yaml [--chunk K]    # tasks 200K..200K+199
 python scripts/collect.py <id> [--archive]
 ```

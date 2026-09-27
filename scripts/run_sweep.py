@@ -76,6 +76,7 @@ def build_manifest(exp, root, sweep_dir):
         src = os.path.join(root, "workloads", "bin", w["binary"])
         dst = os.path.join(bin_dir, w["binary"])
         if not os.path.exists(dst):
+            os.makedirs(os.path.dirname(dst), exist_ok=True)
             shutil.copy2(src, dst)
         argv = ["--binary", dst]
         if w.get("args"):
