@@ -26,7 +26,8 @@ Prefixes: `CORE` = `board.processor.cores.core`, `L1D` = `board.cache_hierarchy.
 | o3_lq_avg_occupancy | `CORE.lsq0.lqAvgOccupancy` | Mean load-queue occupancy |
 | o3_iew_branch_mispredicts | `CORE.iew.branchMispredicts` | Mispredicted branches resolved at execute |
 | o3_commit_squashed_insts | `CORE.commit.commitSquashedInsts` | Instructions squashed (wrong path) |
-| pf_l1d_*, pf_l2_* | `<cache>.prefetcher.{pfIssued,pfUseful,pfUnused,accuracy,coverage}` | Stride prefetcher: issued, used by a demand access, evicted unused, useful/issued, useful/(useful + demand misses) |
+| pf_l1d_*, pf_l2_* | `<cache>.prefetcher.{pfIssued,pfUseful,pfUnused,accuracy,coverage}` | Stride prefetcher: issued, prefetched lines found in the cache by a later demand access, evicted unused, useful/issued, useful/(useful + demand misses). A prefetch still in flight when the demand arrives is counted as late, not useful, so accuracy and coverage understate prefetches that were issued in time to shorten the miss but not to complete before it |
+| pf_*_identified, pf_*_late, pf_*_removed_demand | `<cache>.prefetcher.{pfIdentified,pfLate,pfRemovedDemand}` | Candidates generated; prefetches the demand access caught in flight (MSHR or write buffer); candidates dropped from the queue because a demand request for the line came first |
 
 Derived columns: `cpi` = cycles / sim_insts; `l1d_miss_rate`, `l2_miss_rate` = demand misses / demand accesses; `l1d_mpki`, `l2_mpki`, `br_mpki` = per 1000 instructions; `br_mispredict_rate` = incorrect / predicted; `mem_read_bytes` = DRAM or SimpleMemory bytes read; `l1d_mlp`, `l2_mlp` = demand miss latency sum / sim_ticks, the average number of demand misses outstanding (Little's law).
 
