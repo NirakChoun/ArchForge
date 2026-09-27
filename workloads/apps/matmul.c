@@ -1,9 +1,14 @@
 /* Matrix multiply C = A * B, double precision, row-major, N x N.
- *   matmul <variant> <N> [tile]
+ *   matmul <variant> <N> [tile] [rows]
  * variant 0: naive ijk      (inner loop strides down a column of B)
  * variant 1: interchanged ikj (inner loop streams rows of B and C)
  * variant 2: tiled ikj with a square tile of <tile> elements; the tile loops
  *            are ii, kk, jj so one T x T block of B is reused across T rows.
+ * rows (default N) limits the computation to the first <rows> rows of C,
+ * i.e. an R x N x N product that still reads all of B. For the tiled kernel
+ * the work is rows/tile whole ii blocks, each identical in access pattern
+ * to a block of the full product, so a band shrinks simulation time
+ * without changing the per-block reuse that tiling exploits.
  * Inputs are small integers, so every partial sum is exactly representable
  * in double and all variants produce bit-identical C regardless of
  * summation order. C is checked with two O(N^2) checksums: the plain sum
@@ -11,8 +16,8 @@
  */
 #include "af.h"
 
-static void mm_ijk(int n, const double *A, const double *B, double *C) {
-  for (int i = 0; i < n; i++)
+static void mm_ijk(int n, int r, const double *A, const double *B, double *C) {
+  for (int i = 0; i < r; i++)
     for (int j = 0; j < n; j++) {
       double s = C[(size_t)i * n + j];
       for (int k = 0; k < n; k++) s += A[(size_t)i * n + k] * B[(size_t)k * n + j];
@@ -20,8 +25,8 @@ static void mm_ijk(int n, const double *A, const double *B, double *C) {
     }
 }
 
-static void mm_ikj(int n, const double *A, const double *B, double *C) {
-  for (int i = 0; i < n; i++)
+static void mm_ikj(int n, int r, const double *A, const double *B, double *C) {
+  for (int i = 0; i < r; i++)
     for (int k = 0; k < n; k++) {
       double a = A[(size_t)i * n + k];
       const double *b = B + (size_t)k * n;
@@ -30,9 +35,10 @@ static void mm_ikj(int n, const double *A, const double *B, double *C) {
     }
 }
 
-static void mm_tiled(int n, int t, const double *A, const double *B, double *C) {
-  for (int ii = 0; ii < n; ii += t) {
-    int ie = ii + t < n ? ii + t : n;
+static void mm_tiled(int n, int r, int t, const double *A, const double *B,
+                     double *C) {
+  for (int ii = 0; ii < r; ii += t) {
+    int ie = ii + t < r ? ii + t : r;
     for (int kk = 0; kk < n; kk += t) {
       int ke = kk + t < n ? kk + t : n;
       for (int jj = 0; jj < n; jj += t) {
@@ -53,6 +59,8 @@ int main(int argc, char **argv) {
   int variant = (int)af_arg(argc, argv, 1, 1);
   int n = (int)af_arg(argc, argv, 2, 128);
   int t = (int)af_arg(argc, argv, 3, 32);
+  int r = (int)af_arg(argc, argv, 4, n);
+  if (r < 1 || r > n) { printf("FAIL rows\n"); return 1; }
   size_t nn = (size_t)n * n;
   double *A = af_alloc(nn * sizeof(double));
   double *B = af_alloc(nn * sizeof(double));
@@ -63,9 +71,9 @@ int main(int argc, char **argv) {
   for (size_t i = 0; i < nn; i++) C[i] = 0.0;
 
   af_roi_begin();
-  if (variant == 0) mm_ijk(n, A, B, C);
-  else if (variant == 1) mm_ikj(n, A, B, C);
-  else mm_tiled(n, t, A, B, C);
+  if (variant == 0) mm_ijk(n, r, A, B, C);
+  else if (variant == 1) mm_ikj(n, r, A, B, C);
+  else mm_tiled(n, r, t, A, B, C);
   af_roi_end();
 
   /* Weights w_i = i%5+1, v_j = j%7+1; all quantities are exact integers. */
@@ -79,7 +87,7 @@ int main(int argc, char **argv) {
   uint64_t want_sum = 0, want_w = 0;
   for (int k = 0; k < n; k++) {
     uint64_t colA = 0, colAw = 0, rowB = 0, rowBv = 0;
-    for (int i = 0; i < n; i++) {
+    for (int i = 0; i < r; i++) {  /* rows of C beyond r stay zero */
       uint64_t a = (uint64_t)A[(size_t)i * n + k];
       colA += a;
       colAw += a * (uint64_t)(i % 5 + 1);
@@ -92,6 +100,6 @@ int main(int argc, char **argv) {
     want_sum += colA * rowB;
     want_w += colAw * rowBv;
   }
-  printf("matmul variant=%d n=%d tile=%d\n", variant, n, t);
+  printf("matmul variant=%d n=%d tile=%d rows=%d\n", variant, n, t, r);
   return af_report("matmul", sum ^ (wsum << 1), want_sum ^ (want_w << 1));
 }
