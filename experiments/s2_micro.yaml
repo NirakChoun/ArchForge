@@ -6,8 +6,8 @@ id: s2-micro
 study: stage2_micro
 description: microbenchmark suite on the baseline O3 system
 config: configs/archforge_se.py
-time: "00:30:00"   # replaced by 2x the slowest pilot after the pilot runs
-mem: 4G
+time: "00:15:00"   # pilot max 5 min 30 s (chase 16 MiB), x2, rounded up
+mem: 2G         # pilot peak RSS 80 MB
 base: {}
 hardware:
   list:
