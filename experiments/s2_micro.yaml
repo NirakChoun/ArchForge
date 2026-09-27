@@ -1,0 +1,64 @@
+# Stage 2: microbenchmark suite on the baseline system (all defaults: O3,
+# 32 KiB/8-way L1D, 1 MiB/16-way L2, 64 B lines, no prefetcher, DDR4-2400).
+# Work per run is fixed within each benchmark so only locality or pattern
+# changes. Predictions are in docs/stage2.md, written before these ran.
+id: s2-micro
+study: stage2_micro
+description: microbenchmark suite on the baseline O3 system
+config: configs/archforge_se.py
+time: "00:30:00"   # replaced by 2x the slowest pilot after the pilot runs
+mem: 4G
+base: {}
+hardware:
+  list:
+    - {}
+workloads:
+  # Sequential sum: 2M loads at every size; L1D 32 KiB, L2 1 MiB.
+  - {name: seqsum, binary: seqsum, input: 8KiB, args: "8192 2097152"}
+  - {name: seqsum, binary: seqsum, input: 16KiB, args: "16384 2097152"}
+  - {name: seqsum, binary: seqsum, input: 32KiB, args: "32768 2097152"}
+  - {name: seqsum, binary: seqsum, input: 64KiB, args: "65536 2097152"}
+  - {name: seqsum, binary: seqsum, input: 256KiB, args: "262144 2097152"}
+  - {name: seqsum, binary: seqsum, input: 512KiB, args: "524288 2097152"}
+  - {name: seqsum, binary: seqsum, input: 1MiB, args: "1048576 2097152"}
+  - {name: seqsum, binary: seqsum, input: 2MiB, args: "2097152 2097152"}
+  - {name: seqsum, binary: seqsum, input: 4MiB, args: "4194304 2097152"}
+  - {name: seqsum, binary: seqsum, input: 16MiB, args: "16777216 2097152"}
+  # Strided loads over an 8 MiB array, 1M loads, stride in 8-byte elements.
+  - {name: stride, binary: stride, variant: s1, input: 8MiB, args: "8388608 1 1048576"}
+  - {name: stride, binary: stride, variant: s2, input: 8MiB, args: "8388608 2 1048576"}
+  - {name: stride, binary: stride, variant: s4, input: 8MiB, args: "8388608 4 1048576"}
+  - {name: stride, binary: stride, variant: s8, input: 8MiB, args: "8388608 8 1048576"}
+  - {name: stride, binary: stride, variant: s16, input: 8MiB, args: "8388608 16 1048576"}
+  - {name: stride, binary: stride, variant: s32, input: 8MiB, args: "8388608 32 1048576"}
+  - {name: stride, binary: stride, variant: s64, input: 8MiB, args: "8388608 64 1048576"}
+  # Dependent pointer chase, one chain, 1M steps, one node per 64 B line.
+  - {name: chase, binary: chase, variant: c1, input: 16KiB, args: "16384 1 1048576"}
+  - {name: chase, binary: chase, variant: c1, input: 256KiB, args: "262144 1 1048576"}
+  - {name: chase, binary: chase, variant: c1, input: 4MiB, args: "4194304 1 1048576"}
+  - {name: chase, binary: chase, variant: c1, input: 16MiB, args: "16777216 1 1048576"}
+  # Independent chains over a 16 MiB footprint, 1M total steps.
+  - {name: multistream, binary: chase, variant: c2, input: 16MiB, args: "16777216 2 1048576"}
+  - {name: multistream, binary: chase, variant: c4, input: 16MiB, args: "16777216 4 1048576"}
+  - {name: multistream, binary: chase, variant: c8, input: 16MiB, args: "16777216 8 1048576"}
+  # Compute-bound: four independent multiply-add chains, 2M iterations.
+  - {name: compute, binary: compute, input: 2M-iter, args: "2097152"}
+  # Branch patterns on 1M bytes: 0 taken, 1 alternating, 2 random, 3 sorted.
+  - {name: branch, binary: branch, variant: taken, input: 1M, args: "0 1048576"}
+  - {name: branch, binary: branch, variant: alternate, input: 1M, args: "1 1048576"}
+  - {name: branch, binary: branch, variant: random, input: 1M, args: "2 1048576"}
+  - {name: branch, binary: branch, variant: sorted, input: 1M, args: "3 1048576"}
+  # Conflict pattern, 1M loads: spacing 4 KiB maps every line to one L1D set
+  # (32 KiB / 8 ways); 64 KiB maps to one L1D set and one L2 set
+  # (1 MiB / 16 ways); 64 B spreads the lines over consecutive sets.
+  - {name: conflict, binary: conflict, variant: sp4k, input: 4-lines, args: "4 4096 262144"}
+  - {name: conflict, binary: conflict, variant: sp4k, input: 8-lines, args: "8 4096 131072"}
+  - {name: conflict, binary: conflict, variant: sp4k, input: 9-lines, args: "9 4096 116508"}
+  - {name: conflict, binary: conflict, variant: sp4k, input: 12-lines, args: "12 4096 87381"}
+  - {name: conflict, binary: conflict, variant: sp4k, input: 16-lines, args: "16 4096 65536"}
+  - {name: conflict, binary: conflict, variant: sp64, input: 9-lines, args: "9 64 116508"}
+  - {name: conflict, binary: conflict, variant: sp64, input: 16-lines, args: "16 64 65536"}
+  - {name: conflict, binary: conflict, variant: sp64k, input: 16-lines, args: "16 65536 65536"}
+  - {name: conflict, binary: conflict, variant: sp64k, input: 17-lines, args: "17 65536 61680"}
+  - {name: conflict, binary: conflict, variant: sp64k, input: 24-lines, args: "24 65536 43690"}
+  - {name: conflict, binary: conflict, variant: sp64, input: 24-lines, args: "24 64 43690"}
