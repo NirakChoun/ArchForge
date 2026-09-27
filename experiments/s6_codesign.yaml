@@ -1,8 +1,14 @@
 # Stage 6: tiling x cache hierarchy, full factorial on O3.
 # Software: untiled ikj (the baseline software) and tiled ikj with tile
-# 8..64, at N = 320 (2.3 MiB of matrices) and N = 384 (3.4 MiB), both larger
-# than the largest L2 tested. Hardware: L1D {16, 32, 64} KiB x L2 {256 KiB,
-# 512 KiB, 1 MiB, 2 MiB}; everything else at baseline.
+# 8..64. Each run computes a 128-row band of C = A * B with N x N matrices
+# (matmul.c's rows argument): all of B is read, and the band is 128/T ii
+# blocks (the last one partial for T = 12, 24, 48), each with the reuse
+# pattern of a block of the full product.
+# N = 416 and 448 give touched working sets of 2.13 MiB and 2.41 MiB (B plus
+# the A and C bands), both above the largest L2 tested. Full square products
+# at these sizes exceed the 30-minute per-simulation limit (Stage 5: untiled
+# N = 320 alone took over 22 minutes). Hardware: L1D {16, 32, 64} KiB x
+# L2 {256 KiB, 512 KiB, 1 MiB, 2 MiB}; everything else at baseline.
 id: s6-codesign
 study: stage6_codesign
 description: matmul tile size x L1D size x L2 size at two matrix sizes
@@ -15,19 +21,19 @@ hardware:
     l1d-size: [16KiB, 32KiB, 64KiB]
     l2-size: [256KiB, 512KiB, 1MiB, 2MiB]
 workloads:
-  - {name: matmul, binary: matmul, variant: untiled, input: N320, args: "1 320"}
-  - {name: matmul, binary: matmul, variant: t8, input: N320, args: "2 320 8"}
-  - {name: matmul, binary: matmul, variant: t12, input: N320, args: "2 320 12"}
-  - {name: matmul, binary: matmul, variant: t16, input: N320, args: "2 320 16"}
-  - {name: matmul, binary: matmul, variant: t24, input: N320, args: "2 320 24"}
-  - {name: matmul, binary: matmul, variant: t32, input: N320, args: "2 320 32"}
-  - {name: matmul, binary: matmul, variant: t48, input: N320, args: "2 320 48"}
-  - {name: matmul, binary: matmul, variant: t64, input: N320, args: "2 320 64"}
-  - {name: matmul, binary: matmul, variant: untiled, input: N384, args: "1 384"}
-  - {name: matmul, binary: matmul, variant: t8, input: N384, args: "2 384 8"}
-  - {name: matmul, binary: matmul, variant: t12, input: N384, args: "2 384 12"}
-  - {name: matmul, binary: matmul, variant: t16, input: N384, args: "2 384 16"}
-  - {name: matmul, binary: matmul, variant: t24, input: N384, args: "2 384 24"}
-  - {name: matmul, binary: matmul, variant: t32, input: N384, args: "2 384 32"}
-  - {name: matmul, binary: matmul, variant: t48, input: N384, args: "2 384 48"}
-  - {name: matmul, binary: matmul, variant: t64, input: N384, args: "2 384 64"}
+  - {name: matmul, binary: matmul, variant: untiled, input: N416-R128, args: "1 416 1 128"}
+  - {name: matmul, binary: matmul, variant: t8, input: N416-R128, args: "2 416 8 128"}
+  - {name: matmul, binary: matmul, variant: t12, input: N416-R128, args: "2 416 12 128"}
+  - {name: matmul, binary: matmul, variant: t16, input: N416-R128, args: "2 416 16 128"}
+  - {name: matmul, binary: matmul, variant: t24, input: N416-R128, args: "2 416 24 128"}
+  - {name: matmul, binary: matmul, variant: t32, input: N416-R128, args: "2 416 32 128"}
+  - {name: matmul, binary: matmul, variant: t48, input: N416-R128, args: "2 416 48 128"}
+  - {name: matmul, binary: matmul, variant: t64, input: N416-R128, args: "2 416 64 128"}
+  - {name: matmul, binary: matmul, variant: untiled, input: N448-R128, args: "1 448 1 128"}
+  - {name: matmul, binary: matmul, variant: t8, input: N448-R128, args: "2 448 8 128"}
+  - {name: matmul, binary: matmul, variant: t12, input: N448-R128, args: "2 448 12 128"}
+  - {name: matmul, binary: matmul, variant: t16, input: N448-R128, args: "2 448 16 128"}
+  - {name: matmul, binary: matmul, variant: t24, input: N448-R128, args: "2 448 24 128"}
+  - {name: matmul, binary: matmul, variant: t32, input: N448-R128, args: "2 448 32 128"}
+  - {name: matmul, binary: matmul, variant: t48, input: N448-R128, args: "2 448 48 128"}
+  - {name: matmul, binary: matmul, variant: t64, input: N448-R128, args: "2 448 64 128"}
