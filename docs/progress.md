@@ -4,8 +4,8 @@ Running log for resuming work: stage reports, commits, core-hours, disk, failure
 
 ## Current state
 
-- Stage 0 complete. Next: Stage 1 (option verification with `scripts/check_options.sh`).
-- Cumulative core-hours: 3.67 of 600.
+- Stages 0 and 1 complete. Next: Stage 3 tooling (runner, collector, parser tests), then Stage 2 microbenchmark runs through it.
+- Cumulative core-hours: 3.69 of 600.
 - Home usage: 7.3 GB of 20 GB (stop threshold 16 GB).
 - No ArchForge jobs running or pending.
 
@@ -25,6 +25,7 @@ Running log for resuming work: stage reports, commits, core-hours, disk, failure
 | Stage | Job IDs | Core-hours | Cumulative |
 |---|---|---|---|
 | 0 | 24154193 (env), 24154194 (failed build), 24154203 (build), 24154327, 24154329 (determinism) | 3.67 | 3.67 |
+| 1 | 24154343, 24154348, 24154351 (option checks, about 45 s each) | 0.02 | 3.69 |
 
 ## Decisions
 
@@ -40,3 +41,11 @@ Toolchain built and determinism confirmed; details in `docs/stage0.md`.
 - Failure: first build job (24154194) failed at configure because gem5 picked up the environment's `python3-config`; fixed by putting `/usr/bin` first on `PATH` for the SCons step.
 - Determinism: gem5's `two_level.py` and ArchForge's `archforge_se.py` (O3) each produced identical stats across three runs apart from `host*` statistics.
 - Disk: 4.1 GB before, 7.3 GB after.
+
+## Stage 1 report
+
+Parameterized single-core system verified option by option; details in `docs/stage1.md`, defaults in `docs/architecture.md`.
+
+- 18 option cases, all verified against `config.ini`.
+- Fixed: validation of CPU and DRAM type (config.ini uses base-class names), 128-byte lines with DDR4 (interleave granule), SimpleMemory bandwidth units.
+- `scripts/parse_stats.py` is committed here because the option check uses its `validate_config`; its statistics extraction is tested in Stage 3.

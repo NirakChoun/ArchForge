@@ -30,7 +30,8 @@ from gem5.components.cachehierarchies.classic.abstract_classic_cache_hierarchy i
     AbstractClassicCacheHierarchy,
 )
 from gem5.components.memory.simple import SingleChannelSimpleMemory
-from gem5.components.memory.single_channel import SingleChannelDDR4_2400
+from gem5.components.memory.dram_interfaces.ddr4 import DDR4_2400_8x8
+from gem5.components.memory.memory import ChanneledMemory
 from gem5.components.processors.cpu_types import CPUTypes
 from gem5.components.processors.simple_processor import SimpleProcessor
 from gem5.isas import ISA
@@ -153,12 +154,18 @@ def parse_args(argv):
 
 def build_memory(a):
     if a.mem_type == "DDR4_2400":
-        return SingleChannelDDR4_2400(size=a.mem_size)
-    # Bandwidth set to DDR4-2400 single-channel peak (19.2 GB/s) so that a
+        # Same as the stdlib SingleChannelDDR4_2400 except that the channel
+        # interleaving granule follows the line size: the stdlib fixes it at
+        # 64 B and rejects 128 B lines. With one channel it has no effect on
+        # address mapping.
+        return ChanneledMemory(DDR4_2400_8x8, 1, max(64, a.line_size),
+                               size=a.mem_size)
+    # Bandwidth set to the DDR4-2400 single-channel peak, 19.2e9 B/s
+    # (17.88 GiB/s; gem5 stores 52 ps per byte), so that a
     # latency sweep changes latency, not bandwidth.
     return SingleChannelSimpleMemory(
         latency=a.mem_latency or "50ns", latency_var="0ns",
-        bandwidth="19.2GiB/s", size=a.mem_size,
+        bandwidth="17.88GiB/s", size=a.mem_size,
     )
 
 
