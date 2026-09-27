@@ -6,7 +6,7 @@ id: s4-mlp
 study: stage4_mlp
 description: ROB x chains x memory latency, and LQ x chains
 config: configs/archforge_se.py
-time: "00:30:00"   # set from the pilot (ROB 32, 1 chain, 200 ns is the slowest case)
+time: "00:30:00"   # pilot max 8 min 51 s (ROB 32, 1 chain, 200 ns), x2, rounded up
 mem: 2G
 base: {mem-type: SimpleMemory}
 hardware:
