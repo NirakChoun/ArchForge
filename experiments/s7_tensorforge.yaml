@@ -1,0 +1,20 @@
+# Stage 7b: TensorForge-generated f32 matmul kernels (compiled for the SSE2
+# baseline by scripts/build_tf_kernels.sh) through the Stage 6 hardware grid.
+# N = 320 f32 (1.2 MiB of matrices): a larger N does not fit the per-run
+# time limit for the scalar configuration.
+id: s7-tf
+study: stage7_tensorforge
+description: TensorForge kernel configurations x L1D x L2
+config: configs/archforge_se.py
+time: "00:45:00"   # set from the pilot
+mem: 2G
+base: {}
+hardware:
+  grid:
+    l1d-size: [16KiB, 32KiB, 64KiB]
+    l2-size: [256KiB, 512KiB, 1MiB, 2MiB]
+workloads:
+  - {name: tf_matmul, binary: tf/tf_matmul_scalar_N320, variant: scalar, input: N320-f32, compiler: "TensorForge (MLIR/LLVM 23.1.2) + gcc 11.4.0", cflags: "tforge-cpu-pipeline; opt -O3; llc -O3 -mcpu=x86-64"}
+  - {name: tf_matmul, binary: tf/tf_matmul_tiled32_N320, variant: tiled32, input: N320-f32, compiler: "TensorForge (MLIR/LLVM 23.1.2) + gcc 11.4.0", cflags: "tforge-cpu-pipeline tile-sizes=32,32; opt -O3; llc -O3 -mcpu=x86-64"}
+  - {name: tf_matmul, binary: tf/tf_matmul_vec_N320, variant: vec, input: N320-f32, compiler: "TensorForge (MLIR/LLVM 23.1.2) + gcc 11.4.0", cflags: "tforge-cpu-pipeline reg-tile=6,16,4 vectorize=1; opt -O3; llc -O3 -mcpu=x86-64"}
+  - {name: tf_matmul, binary: tf/tf_matmul_tiled64vec_N320, variant: tiled64vec, input: N320-f32, compiler: "TensorForge (MLIR/LLVM 23.1.2) + gcc 11.4.0", cflags: "tforge-cpu-pipeline tile-sizes=64,64 reg-tile=6,16,4 vectorize=1; opt -O3; llc -O3 -mcpu=x86-64"}

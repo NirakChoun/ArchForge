@@ -34,11 +34,32 @@ $(NATIVE)/%: apps/%.c common/af.h | $(NATIVE)
 $(BIN) $(NATIVE):
 	mkdir -p $@
 
+# Stage 7 compiler-flag variants: bin/<prog>_<tag> for matmul and reduce.
+FLAGVARS := O1 O2 O3 O3nv
+FLAGS_O1 := -O1
+FLAGS_O2 := -O2
+FLAGS_O3 := -O3
+FLAGS_O3nv := -O3 -fno-tree-vectorize
+VARPROGS := $(foreach p,matmul reduce,$(foreach v,$(FLAGVARS),$(BIN)/$(p)_$(v)))
+
+variants: $(VARPROGS)
+
+define VARRULE
+$(BIN)/$(1)_$(2).o: apps/$(1).c common/af.h | $(BIN)
+	$$(CC) $$(FLAGS_$(2)) -march=x86-64 -static -Wall -Icommon -I$$(M5_INC) -c -o $$@ $$<
+$(BIN)/$(1)_$(2): $(BIN)/$(1)_$(2).o
+	$$(CC) $$(FLAGS_$(2)) -march=x86-64 -static -o $$@ $$< $$(LDLIBS)
+endef
+$(foreach p,matmul reduce,$(foreach v,$(FLAGVARS),$(eval $(call VARRULE,$(p),$(v)))))
+
+check-avx-variants: variants
+	../scripts/check_no_avx.sh $(VARPROGS)
+
 check-avx: all
 	../scripts/check_no_avx.sh $(addprefix $(BIN)/,$(PROGS))
 
 clean:
 	rm -rf $(BIN)
 
-.PHONY: all native check-avx clean
+.PHONY: all native check-avx clean variants check-avx-variants
 .PRECIOUS: $(BIN)/%.o
