@@ -1,0 +1,39 @@
+{
+ "slurm_job_id": "24154357",
+ "slurm_array_job_id": "24154357",
+ "slurm_array_task_id": "38",
+ "host": "hive-dc-7-6-34",
+ "date": "2026-09-27T08:49:28",
+ "archforge_commit": "a65c0a5234a2",
+ "archforge_dirty": true,
+ "gem5_tag": "v25.1.0.1",
+ "gem5_commit": "c8222cc67a399bfc01e8658dd14b30d5bfd634f9",
+ "config": "/home/nchoun/ArchForge/configs/archforge_se.py",
+ "config_args": [
+  "--binary",
+  "/home/nchoun/af_scratch/runs/s2-micro/bin/conflict",
+  "--args",
+  "24 65536 43690"
+ ],
+ "binary_sha256": "2e7e92a3ef228ebd49b0df95446a628f80a03dd1ad429bf932be57344825abe3",
+ "exit_code": 0,
+ "wall_seconds": 29,
+ "workload_status": "PASS",
+ "simout_tail": [
+  "",
+  "gem5 version 25.1.0.1",
+  "gem5 compiled Sep 27 2026 07:32:47",
+  "gem5 started Sep 27 2026 08:48:59",
+  "gem5 executing on hive-dc-7-6-34, pid 3517415",
+  "command line: /home/nchoun/gem5/build/X86/gem5.opt -re -d /home/nchoun/af_scratch/runs/s2-micro/r0038 /home/nchoun/ArchForge/configs/archforge_se.py --binary /home/nchoun/af_scratch/runs/s2-micro/bin/conflict --args '24 65536 43690'",
+  "",
+  "info: Standard input is not a terminal, disabling listeners.",
+  "conflict lines=24 spacing=65536 rounds=43690",
+  "conflict checksum=13107000 expected=13107000",
+  "PASS",
+  "af: exit tick=2558416689 cause=exiting with last active thread context"
+ ],
+ "experiment_id": "s2-micro",
+ "run_index": 38,
+ "run": "conflict|sp64k|24-lines"
+}
