@@ -1,0 +1,20 @@
+# gem5, its build, and the conda environment live outside the repo; these
+# patterns guard against accidental copies.
+gem5/
+build/
+archforge-env/
+# Workload binaries and objects
+workloads/bin/
+*.o
+*.a
+*.out.bin
+# Raw simulation output and Slurm logs
+m5out/
+runs/
+logs/
+slurm-*.out
+*.tar.gz
+# Python
+__pycache__/
+*.pyc
+.pytest_cache/
