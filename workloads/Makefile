@@ -10,7 +10,7 @@ BIN     := bin
 NATIVE  := bin/native
 
 MICRO := seqsum stride chase compute branch conflict
-APPS  := matmul aos_soa reduce sort
+APPS  := matmul aos_soa reduce sort falseshare
 
 SRCS_micro := $(addprefix micro/,$(addsuffix .c,$(MICRO)))
 SRCS_apps  := $(wildcard $(addprefix apps/,$(addsuffix .c,$(APPS))))
@@ -26,10 +26,15 @@ $(BIN)/%.o: apps/%.c common/af.h | $(BIN)
 $(BIN)/%: $(BIN)/%.o
 	$(CC) $(CFLAGS) -o $@ $< $(LDLIBS)
 
+# The two-thread E2 workload needs pthreads (static; gem5 SE runs the
+# threads on separate cores).
+$(BIN)/falseshare: $(BIN)/falseshare.o
+	$(CC) $(CFLAGS) -pthread -o $@ $< $(LDLIBS)
+
 $(NATIVE)/%: micro/%.c common/af.h | $(NATIVE)
 	$(CC) $(OPT) -march=x86-64 -Wall -Icommon -DAF_NATIVE -o $@ $<
 $(NATIVE)/%: apps/%.c common/af.h | $(NATIVE)
-	$(CC) $(OPT) -march=x86-64 -Wall -Icommon -DAF_NATIVE -o $@ $<
+	$(CC) $(OPT) -march=x86-64 -Wall -Icommon -DAF_NATIVE -pthread -o $@ $<
 
 $(BIN) $(NATIVE):
 	mkdir -p $@

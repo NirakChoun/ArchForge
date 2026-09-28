@@ -1,0 +1,15 @@
+# Extended E2: two-core false sharing. Each core has private L1I/L1D/L2;
+# the classic SystemXBar keeps them coherent by snooping (gem5 classic MOESI).
+id: e2-falseshare
+study: e2_falseshare
+description: shared-line vs padded per-thread counters on two cores
+config: configs/archforge_se.py
+time: "00:30:00"   # set from the pilot
+mem: 2G
+base: {num-cores: 2}
+hardware:
+  grid:
+    cpu: [timing, o3]
+workloads:
+  - {name: falseshare, binary: falseshare, variant: shared-line, input: 200K-iter, args: "0 200000", cflags: "-O2 -march=x86-64 -static -pthread"}
+  - {name: falseshare, binary: falseshare, variant: padded, input: 200K-iter, args: "1 200000", cflags: "-O2 -march=x86-64 -static -pthread"}
