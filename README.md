@@ -53,17 +53,21 @@ Run the untiled and tiled (t32) matrix multiply band on the baseline and on a 2 
 
 ```
 source scripts/env.sh
+# Same path as the sweep's binary snapshot: the program path is part of the
+# simulated stack, so it must match for an exact reproduction.
+BIN=~/af_scratch/runs/s6-codesign/bin/matmul
+mkdir -p "$(dirname $BIN)" && cp workloads/bin/matmul $BIN
 for l2 in 1MiB 2MiB; do
   sbatch scripts/sim_job.sh ~/af_scratch/runs/demo-untiled-$l2 configs/archforge_se.py \
-    --binary workloads/bin/matmul --args "1 416 1 128" --l2-size $l2
+    --binary $BIN --args "1 416 1 128" --l2-size $l2
   sbatch scripts/sim_job.sh ~/af_scratch/runs/demo-t32-$l2 configs/archforge_se.py \
-    --binary workloads/bin/matmul --args "2 416 32 128" --l2-size $l2
+    --binary $BIN --args "2 416 32 128" --l2-size $l2
 done
 # after the jobs finish (about 25 minutes each):
 python scripts/parse_stats.py ~/af_scratch/runs/demo-untiled-1MiB | grep -E '"(cycles|l2_demand_misses|dram_bytes_read)"'
 ```
 
-The committed rows for these four configurations are in `results/stage6_codesign.csv` (untiled 233.9M and 93.9M cycles, t32 73.6M and 69.6M cycles, for 1 MiB and 2 MiB); gem5 is deterministic, so the parsed values match exactly.
+The committed rows for these four configurations are in `results/stage6_codesign.csv` (untiled 233.9M and 93.9M cycles, t32 73.6M and 69.6M cycles, for 1 MiB and 2 MiB); gem5 is deterministic, so with the same binary (the current `matmul.c` builds the recorded sha256) and the same program path the parsed values match exactly.
 
 ## Documentation
 

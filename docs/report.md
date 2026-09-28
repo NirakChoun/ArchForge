@@ -47,7 +47,7 @@ ROI cycles (primary), committed instructions, IPC, L1D and L2 line misses, DRAM 
 
 ## Methodology
 
-- Determinism: gem5 is deterministic for a given binary and configuration. Three identical runs of gem5's hello program in two configurations produced identical stats apart from host statistics (`docs/stage0.md`), so each configuration was run once.
+- Determinism: gem5 is deterministic for a given binary and configuration. Three identical runs of gem5's hello program in two configurations produced identical stats apart from host statistics (`docs/stage0.md`), so each configuration was run once. Determinism is with respect to every input of the simulation, which includes the binary and its path: the path is copied onto the simulated stack, and a path of different length shifts stack addresses and changed cycles by up to 0.02 percent in the reproduction check below.
 - Region of interest: statistics are reset before and dumped after the kernel; only that dump is used. Initialization and checking are excluded.
 - SE mode: syscall emulation, no operating system, no timer interrupts, no TLB-shootdowns or context switches; physical pages are allocated on first touch.
 - Validation (every run): the workload printed PASS; `config.ini` matches the requested CPU, cache sizes and associativities, line size, clock, prefetcher, memory, and O3 sizes; exactly two stats dumps; the source tree was clean at run start; and ROI instruction counts are identical across hardware configurations for the same binary and arguments. Runs failing any check stay in the CSV with the reason and are excluded from analysis; every reported run passed.
@@ -159,4 +159,4 @@ python analysis/stage6.py
 
 Each experiment file in `experiments/` is run the same way; `analysis/stage<N>.py` regenerates every table and figure in the stage documents from `results/*.csv`. Every CSV row carries the ArchForge commit, the gem5 tag and commit, the binary's sha256, the Slurm job and array task, and the full configuration.
 
-`scripts/repro_clone.sh` (a Slurm job) clones the repository from GitHub into scratch, builds the branch-pattern workload from the clone, reruns the four Stage 2 branch configurations, and checks that every parsed statistic matches the committed CSV exactly.
+`scripts/repro_clone.sh` (a Slurm job) clones the repository from GitHub into scratch, rebuilds the branch-pattern workload from the commit recorded in the CSV (checking the sha256), runs it from the same path the sweep used, reruns the four Stage 2 branch configurations, and compares every parsed statistic with the committed CSV. Job 24164823 reproduced all four runs exactly.
