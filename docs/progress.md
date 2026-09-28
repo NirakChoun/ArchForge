@@ -4,7 +4,7 @@ Running log for resuming work: stage reports, commits, core-hours, disk, failure
 
 ## Current state
 
-- Stages 0 to 6 complete. Next: Stage 7 (flags, then TensorForge), Stage 8 report, E1, E2, final polish.
+- Core stages 0 to 8 complete. E1 sweep running (array 24164085); next: E2, then final polish.
 - Cumulative core-hours: 63.02 of 600.
 - Home usage: 7.4 GB of 20 GB (stop threshold 16 GB).
 - No ArchForge jobs running or pending.
@@ -100,10 +100,23 @@ Tile x L1D x L2 factorial at two sizes, 192 runs, all valid; details in `docs/st
 - Speedups over the baseline: hardware-only 2.49x to 2.50x, software-only 3.17x to 3.18x, joint 3.37x to 3.38x.
 - Design change before running: 128-row bands at N = 416 and 448 replaced full products at 320 and 384 to stay under 30 minutes per simulation.
 
+## Stage 7 report
+
+Compiler variants; details in `docs/stage7.md`.
+
+- Flags (12 runs, pilot 24159048, sweep 24159704): only `-O3` vectorization mattered; matrix multiply cycles about halved; the DRAM-bound reduction's instructions fell 3.2x and cycles 2.1x. Matrix multiply used 128-row bands at N = 320 to keep `-O1` under the time limit.
+- TensorForge (48 runs, pilot 24160498, sweep 24161254): TensorForge's pipeline recompiled for SSE2 (`llc -mcpu=x86-64`; its own backend uses `-mcpu=native`); f32 kernels at N = 256. Register-tiled vectorized kernels 8x faster than scalar on every cache configuration; L1D size irrelevant; L2 below 512 KiB costs 2.4x to 3.1x.
+- Contradicted expectations: scalar TensorForge kernels slower with 1 to 2 MiB L2 than with 512 KiB (L1D writeback per miss).
+
+## Stage 8 report
+
+`docs/report.md` written (research question through reproducibility), `docs/index.md` links every document. `scripts/repro_clone.sh` added for the clean-clone reproduction (run during final polish).
+
 ## Open questions
 
 - Conflict sets on O3 miss far less often than cyclic LRU predicts (Stage 2). Resolved in part by Stage 4: in-order models miss on every access, so out-of-order issue is the cause; the exact reordering was not traced.
 - Strided DRAM access gets faster from stride 8 to stride 64 as DRAM mean access latency falls (Stage 2).
+- Scalar TensorForge f32 kernels at N = 256 run faster with a 512 KiB L2 than with 1 or 2 MiB; the L1D writes back a line on nearly every miss only with the larger L2s. Candidate cause: input lines left dirty in L2 by initialization and handed to the L1D dirty (Stage 7).
 - MinorCPU in gem5 v25.1 is slower than TimingSimpleCPU on these x86 workloads; its branch predictor records zero lookups (Stage 4).
 - Stride-2 loads run slower with 128-byte than with 64-byte lines (Stage 4).
 - Untiled ikj matrix multiply is 1.30x slower than naive ijk at N = 320 on the baseline, with frequent ROB-full stalls (Stage 5).
