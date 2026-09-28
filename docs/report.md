@@ -118,7 +118,7 @@ The interaction term is far below 1: hardware and software solve the same proble
 
 - Fixed cache latencies: gem5's caches here have fixed 1-cycle (L1) and 10-cycle (L2) tag and data latencies at every size. Real larger caches are slower, which would reduce the hardware-only and joint gains; the software-only gain is unaffected.
 - Row band: the co-design runs compute 128 rows of C, which reads all of B at least once per run and slightly overstates compulsory DRAM traffic per multiply-add compared with a full product.
-- Model quirks found in validation (`docs/stage2.md`, `docs/stage4.md`): 64-bit integer multiplies serialize in gem5's x86 micro-ops, MinorCPU does not consult its branch predictor on these binaries, and O3 out-of-order issue masks LRU conflict behaviour. None affects the double-precision matrix multiply, but they limit how far other results generalize.
+- Model quirks found in validation (`docs/stage2.md`, `docs/stage4.md`): 64-bit integer multiplies serialize in gem5's x86 micro-ops, MinorCPU never consults its branch predictor on x86 (its fetch stage predicts on macro-ops, and gem5 marks only the last micro-op of an x86 jump as control; `docs/stage4.md`), and O3 out-of-order issue masks LRU conflict behaviour. None affects the double-precision matrix multiply, but they limit how far other results generalize.
 - The t24/t32 ordering is within a few percent and could be moved by L1D replacement or bank details not modelled.
 
 ## Interpretation

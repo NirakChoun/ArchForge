@@ -42,8 +42,18 @@ Observations
 
 Interpretation: TODO(Nirak)
 
-Competing explanations: for Minor, (a) its fetch stage does not consult the branch predictor for these x86 branches, so every taken branch redirects fetch and discards the wrong-path work (consistent with zero lookups and one discard per instruction); (b) Minor's default x86 configuration (`fetch1FetchLimit=1`, issue width 2, memory issue limit 1) limits throughput on its own. For the conflict sets, the in-order result supports out-of-order issue on O3, rather than gem5's LRU implementation, as the cause of the Stage 2 deviation.
+Competing explanations: for Minor, (a) its fetch stage does not consult the branch predictor (confirmed below) for these x86 branches, so every taken branch redirects fetch and discards the wrong-path work (consistent with zero lookups and one discard per instruction); (b) Minor's default x86 configuration (`fetch1FetchLimit=1`, issue width 2, memory issue limit 1) limits throughput on its own. For the conflict sets, the in-order result supports out-of-order issue on O3, rather than gem5's LRU implementation, as the cause of the Stage 2 deviation.
 Follow-up: none planned; the rest of ArchForge uses O3 only.
+
+### MinorCPU branch predictor: configuration check
+
+Explanation (a) was checked against the run outputs and the gem5 v25.1 source; the configuration is correct and the predictor is present but never consulted, so no run was changed or repeated.
+
+- Instantiated: in `config.ini` of the Minor runs (for example seqsum 32 KiB, run `r0004` of `s4-cpu`), the core has `branchPred=board.processor.cores.core.branchPred`, and that section is a `BranchPredictor` with a BTB, a `TournamentBP` conditional predictor, an indirect predictor, and a RAS, the same objects the O3 runs have.
+- Never consulted: in both stats dumps of that run (the ROI and the ROI-to-exit dump), `branchPred.lookups_0::total` and `branchPred.condPredicted` are 0 and `fetchStats0.numBranches` is absent (zero), while Execute counted 2,098,178 branches (`executeStats0.numBranches`). Fetch decoded 33.6M instructions to commit 8.4M, and 8.4M micro-ops were discarded.
+- Cause in gem5: Minor's `Fetch2::predictBranch` (`src/cpu/minor/fetch2.cc`) calls the predictor only when the decoded instruction's `isControl()` is true, and it sees x86 macro-ops, because Minor splits macro-ops into micro-ops later, in Decode. gem5's x86 macro-op generator (`src/arch/x86/isa/macroop.isa`) puts the control flags (`IsDirectControl`, `IsIndirectControl`, `IsCall`, `IsReturn`) on the last micro-op, not on the macro-op. An x86 jump therefore never reaches the predictor in Minor: every taken branch is resolved in Execute and redirects fetch, discarding the instructions fetched after it.
+
+Consequence: the Minor results measure gem5's MinorCPU running x86 without branch prediction; they are not representative of an in-order core with a working predictor. Fixing this requires changing gem5 itself (Minor's Fetch2 or the x86 macro-op flags), which is outside ArchForge's scope of using gem5 as released. Explanation (b) is not needed for the result and was not tested separately.
 
 ## Study: memory-level parallelism
 
