@@ -7,7 +7,7 @@ id: s7-tf
 study: stage7_tensorforge
 description: TensorForge kernel configurations x L1D x L2
 config: configs/archforge_se.py
-time: "00:45:00"   # set from the pilot
+time: "00:30:00"   # pilot max 11 min 32 s (scalar, 16 KiB / 256 KiB), x2, rounded up
 mem: 2G
 base: {}
 hardware:
