@@ -4,8 +4,8 @@ Running log for resuming work: stage reports, commits, core-hours, disk, failure
 
 ## Current state
 
-- Core stages 0 to 8 complete. E1 sweep running (array 24164085); next: E2, then final polish.
-- Cumulative core-hours: 63.02 of 600.
+- All Core stages, Extended E1 and E2, and final polish complete. No ArchForge jobs running or pending. Stretch items not started, per the brief.
+- Cumulative core-hours: 71.81 of 600.
 - Home usage: 7.4 GB of 20 GB (stop threshold 16 GB).
 - No ArchForge jobs running or pending.
 
@@ -29,6 +29,7 @@ Running log for resuming work: stage reports, commits, core-hours, disk, failure
 | 2-3 | 24154357 (pilot), 24154374 (sweep), 24154474 (reruns) | 1.16 | 4.85 |
 | 4 | s4-cpu 24154521, 24154547; s4-mlp 24154580, 24154606; s4-cache 24154820, 24154840, 24155086; option check 24155085; s4-prefetch 24155102, 24155119 | 10.05 | 14.90 |
 | 5-6 | s5 24155330, 24155373 (24155328 cancelled: dirty tree); s6 pilot 24155602, factorial 24155846 (190 tasks) | 48.12 | 63.02 |
+| 7, E1, E2, final | s7 24159048, 24159704, 24160498, 24161254; e1 24163988, 24164085; e2 24164211, 24164242; repro 24164311, 24164530, 24164823 | 8.79 | 71.81 |
 
 ## Decisions
 
@@ -111,6 +112,28 @@ Compiler variants; details in `docs/stage7.md`.
 ## Stage 8 report
 
 `docs/report.md` written (research question through reproducibility), `docs/index.md` links every document. `scripts/repro_clone.sh` added for the clean-clone reproduction (run during final polish).
+
+## E1 report
+
+AoS vs SoA x line size x prefetcher, 24 runs (pilot 24163988, sweep 24164085), all valid; `docs/e1.md`.
+
+- One-field AoS 7.2x to 10.7x slower than SoA at every line size, with or without prefetching; AoS time flat across line sizes (window-limited). Contradicted the prediction that AoS would slow with longer lines.
+- Eight fields: layouts within 10 percent.
+
+## E2 report
+
+Two-core false sharing, 4 runs (pilot 24164211, rest 24164242), all valid; `docs/e2.md`.
+
+- Shared line 7.8x (O3) and 5.1x (TimingSimple) slower per increment than padded; one read-exclusive and one 64-byte snoop per increment on O3; load miss plus upgrade on TimingSimple.
+- Parser extended with multicore columns (`mc_*`), which sum per-core statistics and read crossbar coherence traffic.
+
+## Final polish report
+
+- README rewritten (summary, gem5 vs ArchForge, pipeline diagram, build and reproduce, worked example, results); `docs/index.md` links every document; `docs/report.md` complete including E1 and E2.
+- All results CSVs regenerated with the final parser from the archived raw outputs (`scripts/recollect_all.sh`); every analysis script re-run with no change to any figure.
+- Incident: a re-collect of `s6-codesign` was interrupted by a command timeout while it rewrote that sweep's archive, leaving a truncated `.tar.gz`; the unpacked copy was then removed. The Stage 6 CSV had already been rewritten from the complete data and matches the committed one in every existing column. 84 of 192 Stage 6 run directories were recovered into a new, valid archive; the raw outputs of the other 108 are lost. `collect.py` now writes archives under a temporary name and renames them.
+- Clean-clone reproduction (`scripts/repro_clone.sh`): the first attempt (job 24164311) rebuilt the branch workload from the current tree, whose `workloads/common/af.h` changed after Stage 2; the binary differed and 3 of 4 runs differed by up to 0.02 percent in cycles. The script now rebuilds the workload from the commit recorded in the CSV, checks the sha256 against the recorded one, and then simulates. Job 24164530 rebuilt the identical binary and still differed the same way: the difference came from the program path, which is copied onto the simulated stack (the sweep ran the binary from `runs/s2-micro/bin/`, the clone from `workloads/bin/`). The script now runs the binary from the sweep's path; job 24164823 reproduced all four runs exactly (every parsed statistic identical).
+- Commit prefixes: Extended and final-polish commits use `e1:`, `e2:`, and `final:` instead of `stageN:`.
 
 ## Open questions
 
