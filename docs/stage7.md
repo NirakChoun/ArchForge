@@ -6,7 +6,7 @@ All code stays within gem5's X86 model: no AVX. gcc builds use `-march=x86-64`; 
 
 ## Study: gcc optimization level
 
-Question: how do `-O1`, `-O2`, `-O3`, and `-O3 -fno-tree-vectorize` change instruction count and memory behaviour for matrix multiply (untiled ikj and tiled 32, N = 320) and the reduction?
+Question: how do `-O1`, `-O2`, `-O3`, and `-O3 -fno-tree-vectorize` change instruction count and memory behaviour for matrix multiply (untiled ikj and tiled 32, a 128-row band of an N = 320 product; the full product took 25 minutes at -O2 in Stage 5, too close to the 30-minute limit for -O1) and the reduction?
 Suspected mechanism: at `-O3`, gcc 11 vectorizes the ikj inner loop (`c[j] += a * b[j]`) with SSE2 `mulpd`/`addpd` (2 doubles per instruction) and the reduction with `paddd` (4 integers per instruction); `-O2` in gcc 11 does not vectorize. `-O1` keeps more loads and stores in the loop.
 Evidence before running: `objdump` shows `mulpd` in `matmul_O3` and none in `matmul_O2`; `paddd` in the `-O3` reduction kernel and none in `-O3 -fno-tree-vectorize`.
 Hypothesis and prediction: `-O3` cuts ROI instructions roughly in half for the vectorized loops (fewer for matmul, whose loop overhead is shared). Cycles fall less than instructions for untiled matmul (memory-bound beyond L2) and for the reduction over 4 MiB (DRAM-bound), and more for tiled 32 (L1-resident inner loops). L1D and L2 line misses and DRAM bytes are nearly unchanged across flags, since vectorization changes how many instructions touch each line, not which lines. `-O3 -fno-tree-vectorize` lands close to `-O2`.

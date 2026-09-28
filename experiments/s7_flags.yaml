@@ -1,4 +1,7 @@
 # Stage 7a: compiler flags within the non-AVX constraint (-march=x86-64).
+# Matrix multiply computes a 128-row band at N = 320 (matmul.c rows
+# argument): the full N = 320 product took 25 minutes at -O2 in Stage 5,
+# and -O1 retires more instructions.
 id: s7-flags
 study: stage7_flags
 description: -O1, -O2, -O3, -O3 -fno-tree-vectorize on matmul and reduce
@@ -10,14 +13,14 @@ hardware:
   list:
     - {}
 workloads:
-  - {name: matmul, binary: matmul_O1, variant: ikj, input: N320, args: "1 320", cflags: "-O1 -march=x86-64 -static"}
-  - {name: matmul, binary: matmul_O2, variant: ikj, input: N320, args: "1 320", cflags: "-O2 -march=x86-64 -static"}
-  - {name: matmul, binary: matmul_O3, variant: ikj, input: N320, args: "1 320", cflags: "-O3 -march=x86-64 -static"}
-  - {name: matmul, binary: matmul_O3nv, variant: ikj, input: N320, args: "1 320", cflags: "-O3 -fno-tree-vectorize -march=x86-64 -static"}
-  - {name: matmul, binary: matmul_O1, variant: tiled32, input: N320, args: "2 320 32", cflags: "-O1 -march=x86-64 -static"}
-  - {name: matmul, binary: matmul_O2, variant: tiled32, input: N320, args: "2 320 32", cflags: "-O2 -march=x86-64 -static"}
-  - {name: matmul, binary: matmul_O3, variant: tiled32, input: N320, args: "2 320 32", cflags: "-O3 -march=x86-64 -static"}
-  - {name: matmul, binary: matmul_O3nv, variant: tiled32, input: N320, args: "2 320 32", cflags: "-O3 -fno-tree-vectorize -march=x86-64 -static"}
+  - {name: matmul, binary: matmul_O1, variant: ikj, input: N320-R128, args: "1 320 1 128", cflags: "-O1 -march=x86-64 -static"}
+  - {name: matmul, binary: matmul_O2, variant: ikj, input: N320-R128, args: "1 320 1 128", cflags: "-O2 -march=x86-64 -static"}
+  - {name: matmul, binary: matmul_O3, variant: ikj, input: N320-R128, args: "1 320 1 128", cflags: "-O3 -march=x86-64 -static"}
+  - {name: matmul, binary: matmul_O3nv, variant: ikj, input: N320-R128, args: "1 320 1 128", cflags: "-O3 -fno-tree-vectorize -march=x86-64 -static"}
+  - {name: matmul, binary: matmul_O1, variant: tiled32, input: N320-R128, args: "2 320 32 128", cflags: "-O1 -march=x86-64 -static"}
+  - {name: matmul, binary: matmul_O2, variant: tiled32, input: N320-R128, args: "2 320 32 128", cflags: "-O2 -march=x86-64 -static"}
+  - {name: matmul, binary: matmul_O3, variant: tiled32, input: N320-R128, args: "2 320 32 128", cflags: "-O3 -march=x86-64 -static"}
+  - {name: matmul, binary: matmul_O3nv, variant: tiled32, input: N320-R128, args: "2 320 32 128", cflags: "-O3 -fno-tree-vectorize -march=x86-64 -static"}
   - {name: reduce, binary: reduce_O1, input: 1M-elem, args: "1048576 2", cflags: "-O1 -march=x86-64 -static"}
   - {name: reduce, binary: reduce_O2, input: 1M-elem, args: "1048576 2", cflags: "-O2 -march=x86-64 -static"}
   - {name: reduce, binary: reduce_O3, input: 1M-elem, args: "1048576 2", cflags: "-O3 -march=x86-64 -static"}
