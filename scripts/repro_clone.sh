@@ -35,10 +35,19 @@ git checkout -q HEAD -- workloads
 GOT_SHA=$(sha256sum workloads/bin/branch | cut -d' ' -f1)
 echo "workload source commit: $SRC_COMMIT  binary sha256 match: $([[ $GOT_SHA == "$WANT_SHA" ]] && echo yes || echo NO)"
 [[ "$GOT_SHA" == "$WANT_SHA" ]] || { echo "RESULT: rebuilt binary differs from the committed runs"; exit 1; }
+# The program path is copied onto the simulated process's stack (argv), so
+# it is an input of the simulation: a path of different length shifts stack
+# addresses and therefore cache behaviour. Run the binary from the same path
+# the sweep used (run_sweep.py snapshots binaries to runs/<id>/bin/).
+BIN="$AF_SCRATCH/runs/s2-micro/bin/branch"
+[[ ! -e "$BIN" ]] || { echo "refusing: $BIN exists"; exit 1; }
+mkdir -p "$(dirname "$BIN")"
+cp workloads/bin/branch "$BIN"
 for p in 0 1 2 3; do
   scripts/run_sim.sh "$DIR/runs/branch$p" configs/archforge_se.py \
-    --binary workloads/bin/branch --args "$p 1048576" >/dev/null
+    --binary "$BIN" --args "$p 1048576" >/dev/null
 done
+rm -rf "$AF_SCRATCH/runs/s2-micro"
 python - "$DIR/runs" <<'EOF'
 import csv, os, sys
 sys.path.insert(0, "scripts")
