@@ -82,6 +82,11 @@ Capacity sensitivity (max/min cycles over the 12 cache configurations): 2.49 to 
 - gcc `-O3` SSE2 vectorization halved matrix multiply cycles; the DRAM-bound reduction's instructions fell 3.2x but cycles only 2.1x.
 - TensorForge's register-tiled, vectorized f32 kernels, recompiled for SSE2, ran 8x faster than its scalar kernels on every cache configuration; its cache tiling (M and N only) left the scalar kernel's column walk of B in place. Scalar kernels ran slower with 1 to 2 MiB of L2 than with 512 KiB, together with an L1D writeback on nearly every miss (open question, `docs/stage7.md`).
 
+### Extended studies (E1, E2)
+
+- Data layout x hierarchy (E1): a one-field AoS sum stayed 7.2x to 10.7x slower than SoA across 32, 64, and 128-byte lines with and without the stride prefetcher; AoS time was flat across line sizes (window-limited, about 8.5 misses in flight), and the prefetcher helped SoA up to 1.45x but AoS only 1.03x to 1.04x. With all fields summed the layouts were within 10 percent.
+- False sharing (E2): two cores incrementing counters in one line took 7.8x (O3) and 5.1x (TimingSimple) longer per increment than padded counters, with one read-exclusive request and one 64-byte snoop per increment on the crossbar between the private L2s.
+
 ## Mechanistic explanation
 
 The co-design result follows one causal chain per kernel, each link backed by a statistic (N = 416, per multiply-add; `docs/stage6.md`).
