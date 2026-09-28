@@ -4,9 +4,9 @@ Running log for resuming work: stage reports, commits, core-hours, disk, failure
 
 ## Current state
 
-- Stages 0 to 4 complete. Next: Stage 5 (`experiments/s5_workloads.yaml`), then the Stage 6 pilot.
-- Cumulative core-hours: 14.90 of 600.
-- Home usage: 7.3 GB of 20 GB (stop threshold 16 GB).
+- Stages 0 to 6 complete. Next: Stage 7 (flags, then TensorForge), Stage 8 report, E1, E2, final polish.
+- Cumulative core-hours: 63.02 of 600.
+- Home usage: 7.4 GB of 20 GB (stop threshold 16 GB).
 - No ArchForge jobs running or pending.
 
 ## Locations
@@ -28,12 +28,15 @@ Running log for resuming work: stage reports, commits, core-hours, disk, failure
 | 1 | 24154343, 24154348, 24154351 (option checks, about 45 s each) | 0.02 | 3.69 |
 | 2-3 | 24154357 (pilot), 24154374 (sweep), 24154474 (reruns) | 1.16 | 4.85 |
 | 4 | s4-cpu 24154521, 24154547; s4-mlp 24154580, 24154606; s4-cache 24154820, 24154840, 24155086; option check 24155085; s4-prefetch 24155102, 24155119 | 10.05 | 14.90 |
+| 5-6 | s5 24155330, 24155373 (24155328 cancelled: dirty tree); s6 pilot 24155602, factorial 24155846 (190 tasks) | 48.12 | 63.02 |
 
 ## Decisions
 
 - gem5 embeds the system Python 3.10 and is compiled with the system gcc 11.4; the conda environment supplies only SCons and analysis tools (Stage 0).
 - Account `publicgrp`, partition `high` for every job.
 - Never commit or copy tracked files into `~/ArchForge` while an array is running: tasks that start during the change record a dirty tree and fail validation (happened to two Stage 2 runs, which were rerun).
+- After any parser change, re-collect every existing study and commit the regenerated CSVs before the next submission (a re-collect rewrote three tracked CSVs and dirtied the tree once; the affected pilot was cancelled and resubmitted).
+- Stage 6 uses 128-row bands of C at N = 416 and 448 instead of full N = 320/384 products: the full products exceed the 30-minute per-simulation limit (`docs/stage6.md`).
 - The Stage 3 runner (`run_sweep.py`, `collect.py`, `parse_stats.py`) is written before the Stage 2 baseline runs so Stage 2 uses the same validated pipeline instead of a throwaway script.
 
 ## Stage 0 report
@@ -79,10 +82,29 @@ Four mechanism studies, 164 runs, all valid; details in `docs/stage4.md`.
 - Failure: 32-byte lines failed on O3 (`fetch buffer size (64 bytes) is greater than the cache block size`). Fixed in the config (fetch buffer follows the line size below 64 B, documented in `docs/architecture.md`), option check extended, four runs rerun.
 - Contradicted expectations: MinorCPU slower than TimingSimpleCPU on nearly everything; stride 2 slower with 128-byte lines than with 64-byte lines.
 
+## Stage 5 report
+
+Application workloads characterized on the baseline; details in `docs/stage5.md`.
+
+- 9 runs (pilot 24155330, sweep 24155373), all valid. Matrix multiply ijk N = 320 took 24 min 17 s, the slowest single simulation so far.
+- Matrix multiply at N = 320: B fits in the 1 MiB L2, so loop order and tiling changed L1D misses 80x but cycles at most 1.30x; ijk was fastest, contrary to the prediction.
+- AoS one-field sum: 32x the DRAM bytes and 7.2x the cycles of SoA; eight fields: within 7 percent.
+- Sort: 55 branch mispredictions per 1000 instructions, cache-resident; reduction: DRAM stream.
+
+## Stage 6 report
+
+Tile x L1D x L2 factorial at two sizes, 192 runs, all valid; details in `docs/stage6.md`.
+
+- Untiled matmul is capacity-sensitive only at the 2 MiB L2 (2.5x); tiled kernels vary at most 1.23x over the whole grid.
+- Best tile t24 or t32 everywhere; t24 at 16 KiB L1D, t32 at 32 to 64 KiB with 512 KiB to 1 MiB L2; margins 0.1 to 5.4 percent.
+- Speedups over the baseline: hardware-only 2.49x to 2.50x, software-only 3.17x to 3.18x, joint 3.37x to 3.38x.
+- Design change before running: 128-row bands at N = 416 and 448 replaced full products at 320 and 384 to stay under 30 minutes per simulation.
+
 ## Open questions
 
 - Conflict sets on O3 miss far less often than cyclic LRU predicts (Stage 2). Resolved in part by Stage 4: in-order models miss on every access, so out-of-order issue is the cause; the exact reordering was not traced.
 - Strided DRAM access gets faster from stride 8 to stride 64 as DRAM mean access latency falls (Stage 2).
 - MinorCPU in gem5 v25.1 is slower than TimingSimpleCPU on these x86 workloads; its branch predictor records zero lookups (Stage 4).
 - Stride-2 loads run slower with 128-byte than with 64-byte lines (Stage 4).
+- Untiled ikj matrix multiply is 1.30x slower than naive ijk at N = 320 on the baseline, with frequent ROB-full stalls (Stage 5).
 - The compute loop is serialized, 3 cycles per 64-bit multiply, with no functional-unit contention (Stage 2); attributed to gem5's x86 IMUL micro-ops, not investigated further.
