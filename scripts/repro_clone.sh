@@ -20,7 +20,21 @@ git clone -q git@github.com:NirakChoun/ArchForge.git "$DIR/ArchForge"
 export AF_ROOT="$DIR/ArchForge"
 cd "$AF_ROOT"
 echo "clone commit: $(git rev-parse --short=12 HEAD)  host: $(hostname)  job: ${SLURM_JOB_ID:-none}"
+# Rebuild the workload from the source at the commit the committed runs
+# used, and require the same binary (sha256) before simulating: a later
+# change to workloads/common/af.h changes code layout and therefore timing.
+read -r SRC_COMMIT WANT_SHA < <(python - <<'EOF2'
+import csv
+r = [r for r in csv.DictReader(open("results/stage2_micro.csv")) if r["workload"] == "branch"][0]
+print(r["archforge_commit"], r["binary_sha256"])
+EOF2
+)
+git checkout -q "$SRC_COMMIT" -- workloads
 make -C workloads bin/branch >/dev/null
+git checkout -q HEAD -- workloads
+GOT_SHA=$(sha256sum workloads/bin/branch | cut -d' ' -f1)
+echo "workload source commit: $SRC_COMMIT  binary sha256 match: $([[ $GOT_SHA == "$WANT_SHA" ]] && echo yes || echo NO)"
+[[ "$GOT_SHA" == "$WANT_SHA" ]] || { echo "RESULT: rebuilt binary differs from the committed runs"; exit 1; }
 for p in 0 1 2 3; do
   scripts/run_sim.sh "$DIR/runs/branch$p" configs/archforge_se.py \
     --binary workloads/bin/branch --args "$p 1048576" >/dev/null
