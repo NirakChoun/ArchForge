@@ -34,6 +34,18 @@ Interpretation: TODO(Nirak)
 Competing explanations for ikj being slower than ijk: the extra load and store per multiply-add, and a structural limit on stores (one store per multiply-add must drain to L1D after commit), versus the latency of the L2 hits being fully hidden for ijk because its loads are independent. For tiled 32's extra DRAM traffic: re-reading C's row segments once per kk block.
 Follow-up: Stage 6 (hardware sweep where B no longer fits in L2).
 
+### Compiler check: generated code for ijk and ikj
+
+gcc did not transform either loop nest; the loop order in the binary is the loop order in the source.
+
+- Method: the Stage 5 binary was rebuilt from `workloads/apps/matmul.c` at commit `ee4cb99` with the same command (`gcc 11.4 -O2 -march=x86-64 -static`) and matched the simulated binary's sha256 (`2009e9f2...`). The kernels are inlined into `main`; the loops below come from `gcc -S` of the same source, and `-fopt-info-loop-optimized` was used to list loop transformations.
+- `-fopt-info` reported one transformation in the file: the zero-fill of C before the ROI became a `memset` call (loop distribution). Nothing in the three kernels was transformed. At `-O2`, gcc 11 has loop interchange, unroll-and-jam, loop-nest optimization, and loop unswitching disabled, and does not vectorize (`main`, which holds all three inlined kernels, contains no `mulpd` or `addpd` and three scalar `mulsd`, one per kernel).
+- ijk inner loop (k innermost, 7 instructions per multiply-add): `movsd (A row), %xmm1; mulsd (B column), %xmm1; add $8, A pointer; add n*8, B pointer; addsd %xmm1, %xmm0; cmp; jne`. The sum stays in register `%xmm0` and is stored once per (i, j) after the loop. B is walked down a column (stride n x 8 bytes), as written.
+- ikj inner loop (j innermost, 8 instructions per multiply-add): `movsd (b[j]), %xmm0; add $8; add $8; mulsd %xmm1 (a), %xmm0; addsd (c[j]), %xmm0; movsd %xmm0, (c[j]); cmp; jne`. Each multiply-add loads and stores `c[j]`, as written.
+- These counts match the measured ROI instructions per multiply-add (7.0 for ijk, 8.0 for ikj).
+
+So the 1.30x advantage of ijk is not a compiler effect. The two kernels differ in the core: ijk has a loop-carried dependence through one register (`addsd` into `%xmm0`) and no stores in its inner loop, and its B loads are independent L2 hits that the O3 core overlaps; ikj has no loop-carried register dependence but one load and one store to `c[j]` per multiply-add. With B in L2 at N = 320, ikj's extra memory operation per multiply-add, and in particular its store, outweighs ijk's 8x higher L1D miss count. Which O3 resource the stores exhaust was not isolated: `rename.SQFullEvents` is zero for ikj, while `rename.ROBFullEvents` is 18.5M, consistent with stores waiting at the ROB head to write L1D after commit.
+
 ## Study: array of structs vs struct of arrays
 
 Question: how much does data layout change the cost of summing one field versus all fields?
