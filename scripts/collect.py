@@ -136,8 +136,12 @@ def main():
         adir = os.path.join(os.environ["AF_SCRATCH"], "archive")
         os.makedirs(adir, exist_ok=True)
         tpath = os.path.join(adir, f"{man['id']}.tar.gz")
-        with tarfile.open(tpath, "w:gz") as t:
+        # Write to a temporary name and rename, so an interrupted run never
+        # leaves a truncated archive in place of a good one (this happened
+        # once to s6-codesign; see docs/progress.md).
+        with tarfile.open(tpath + ".tmp", "w:gz") as t:
             t.add(sweep, arcname=man["id"])
+        os.replace(tpath + ".tmp", tpath)
         shutil.rmtree(sweep)
         print("archived", tpath, os.path.getsize(tpath), "bytes")
     return 0
