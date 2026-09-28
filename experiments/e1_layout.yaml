@@ -5,7 +5,7 @@ id: e1-layout
 study: e1_layout
 description: AoS vs SoA x line size x stride prefetcher
 config: configs/archforge_se.py
-time: "00:15:00"   # Stage 5 runs of these inputs took at most 2 min 5 s; confirmed by pilot
+time: "00:15:00"   # pilot max 2 min 31 s (AoS one field, 32 B lines), x2, rounded up
 mem: 2G
 base: {}
 hardware:
