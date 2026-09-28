@@ -4,7 +4,7 @@ id: e2-falseshare
 study: e2_falseshare
 description: shared-line vs padded per-thread counters on two cores
 config: configs/archforge_se.py
-time: "00:30:00"   # set from the pilot
+time: "00:30:00"   # pilot max 22 s; the 30-minute request predates the pilot and was kept for the two remaining runs
 mem: 2G
 base: {num-cores: 2}
 hardware:
