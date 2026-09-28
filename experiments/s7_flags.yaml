@@ -6,7 +6,7 @@ id: s7-flags
 study: stage7_flags
 description: -O1, -O2, -O3, -O3 -fno-tree-vectorize on matmul and reduce
 config: configs/archforge_se.py
-time: "00:45:00"   # set from the pilot
+time: "00:15:00"   # pilot max 6 min 25 s (matmul ikj -O1), x2, rounded up
 mem: 2G
 base: {}
 hardware:
