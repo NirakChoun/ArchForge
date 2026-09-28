@@ -1,0 +1,19 @@
+# Extended E1: data layout x memory hierarchy. AoS vs SoA field sums
+# (one field and all eight) x line size {32, 64, 128} x stride prefetcher
+# at L1D on/off; everything else at baseline.
+id: e1-layout
+study: e1_layout
+description: AoS vs SoA x line size x stride prefetcher
+config: configs/archforge_se.py
+time: "00:15:00"   # Stage 5 runs of these inputs took at most 2 min 5 s; confirmed by pilot
+mem: 2G
+base: {}
+hardware:
+  grid:
+    line-size: [32, 64, 128]
+    prefetcher: [none, stride]
+workloads:
+  - {name: aos_soa, binary: aos_soa, variant: aos-f1, input: 128K-rec, args: "0 131072 1 4"}
+  - {name: aos_soa, binary: aos_soa, variant: soa-f1, input: 128K-rec, args: "1 131072 1 4"}
+  - {name: aos_soa, binary: aos_soa, variant: aos-f8, input: 128K-rec, args: "0 131072 8 1"}
+  - {name: aos_soa, binary: aos_soa, variant: soa-f8, input: 128K-rec, args: "1 131072 8 1"}
