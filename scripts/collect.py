@@ -92,7 +92,7 @@ def write_csv(path, exp_id, rows):
     if os.path.exists(path):
         with open(path, newline="") as f:
             old = [r for r in csv.DictReader(f) if r["experiment_id"] != exp_id]
-    cols = ID_COLS + list(parse_stats.STATS) + parse_stats.DERIVED
+    cols = ID_COLS + list(parse_stats.STATS) + parse_stats.DERIVED + list(parse_stats.MULTI)
     os.makedirs(os.path.dirname(path), exist_ok=True)
     with open(path, "w", newline="") as f:
         w = csv.DictWriter(f, fieldnames=cols, extrasaction="ignore")

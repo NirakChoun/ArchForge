@@ -86,6 +86,24 @@ STATS = {
     "pf_l2_accuracy": (f"{L2}.prefetcher.accuracy", f"{L2}.prefetcher", None),
     "pf_l2_coverage": (f"{L2}.prefetcher.coverage", f"{L2}.prefetcher", None),
 }
+# Multicore runs (E2): per-core objects carry an index (cores0, l1dcaches1,
+# ...). These columns sum over cores, except cycles (the slowest core), and
+# add the coherence traffic seen on the shared system crossbar.
+MEMBUS = "board.cache_hierarchy.membus"
+MULTI = {
+    "mc_cycles_max": (r"^board\.processor\.cores\d+\.core\.numCycles$", max),
+    "mc_insts_sum": (r"^board\.processor\.cores\d+\.core\.commitStats0\.numInsts$", sum),
+    "mc_l1d_demand_accesses": (r"^board\.cache_hierarchy\.l1dcaches\d+\.demandAccesses::total$", sum),
+    "mc_l1d_demand_misses": (r"^board\.cache_hierarchy\.l1dcaches\d+\.demandMisses::total$", sum),
+    "mc_l1d_demand_mshr_misses": (r"^board\.cache_hierarchy\.l1dcaches\d+\.demandMshrMisses::total$", sum),
+    "mc_l2_demand_misses": (r"^board\.cache_hierarchy\.l2caches\d+\.demandMisses::total$", sum),
+    "mc_membus_readex_req": (rf"^{MEMBUS}\.transDist::ReadExReq$", sum),
+    "mc_membus_upgrade_req": (rf"^{MEMBUS}\.transDist::UpgradeReq$", sum),
+    "mc_membus_readshared_req": (rf"^{MEMBUS}\.transDist::ReadSharedReq$", sum),
+    "mc_membus_snoops": (rf"^{MEMBUS}\.snoops$", sum),
+    "mc_membus_snoop_bytes": (rf"^{MEMBUS}\.snoopTraffic$", sum),
+}
+
 DERIVED = ["cpi", "l1d_miss_rate", "l2_miss_rate", "l1d_mpki", "l2_mpki",
            "br_mispredict_rate", "br_mpki", "mem_read_bytes", "l1d_mlp", "l2_mlp"]
 
@@ -156,6 +174,10 @@ def extract(dump, cp, cpu):
     row["l1d_mlp"] = ratio("l1d_demand_miss_latency", "sim_ticks")
     row["l2_mlp"] = ratio("l2_demand_miss_latency", "sim_ticks")
     # Bytes read from main memory, whichever memory model was used.
+    for col, (pat, agg) in MULTI.items():
+        vals = [_num(v) for k, v in dump.items() if re.match(pat, k)]
+        vals = [v for v in vals if v is not None]
+        row[col] = agg(vals) if vals else None
     row["mem_read_bytes"] = (row["dram_bytes_read"] if row["dram_bytes_read"] is not None
                              else row["smem_bytes_read"])
     return row
